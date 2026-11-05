@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>¡Feliz Cumpleaños! - Pastel 3D</title>
+    <!-- 1. AGREGAR ESTA LÍNEA PARA IMPORTAR LA LETRA -->
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            background-color: #0c0a18;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+            
+            /* 2. CAMBIAR EL NOMBRE DE LA LETRA AQUÍ */
+            font-family: 'Pacifico', cursive;
+        }
+        
+        /* Estilo para el texto flotante de cumpleaños */
+        .texto-cumple {
+            position: absolute;
+            top: 8%;
+            width: 100%;
+            text-align: center;
+            color: #fff;
+            pointer-events: none; /* Deja que los toques pasen a la animación */
+            z-index: 10;
+            animation: latido 2s infinite;
+        }
+        .texto-cumple h1 {
+            font-size: 3.5rem;
+            margin: 0;
+            /* Efecto neón brillante */
+            text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f, 0 0 40px #ff007f, 0 0 80px #ff007f;
+        }
+        .texto-cumple p {
+            font-size: 1.5rem;
+            margin-top: 10px;
+            color: #ffd700;
+            text-shadow: 0 0 10px #ffaa00;
+        }
+        
+        @media (max-width: 768px) {
+            .texto-cumple h1 { font-size: 2.2rem; }
+            .texto-cumple p { font-size: 1.2rem; }
+        }
+
+        /* Animación de latido para el texto */
+        @keyframes latido {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.js"></script>
+</head>
+<body>
+
+    <!-- AQUÍ PUEDES EDITAR EL TEXTO Y EL NOMBRE -->
+    <div class="texto-cumple">
+        <h1>¡Feliz Cumpleaños Carolina!</h1>
+        <!-- Cambia "Nombre" por el nombre de la persona -->
+        <p>Que la vida te regale siempre tantos motivos para sonreír como luces tiene este pastel. ✨</p> 
+    </div>
+
+    <script>
+        // Variables globales y cantidades de partículas
+        let isMobile = false;
+        let C_T1, C_T2, C_T3, C_CANDLE, C_FLAME, C_CONFETTI;
+        
+        let tier1 = [], tier2 = [], tier3 = [], candle = [], flame = [], confetti = [];
+        let stars = [];
+
+        function setup() {
+            createCanvas(windowWidth, windowHeight);
+            angleMode(RADIANS);
+            
+            isMobile = width < 768;
+            
+            // Cantidades optimizadas según dispositivo
+            C_T1 = isMobile ? 800 : 2200;
+            C_T2 = isMobile ? 600 : 1600;
+            C_T3 = isMobile ? 400 : 1000;
+            C_CANDLE = isMobile ? 150 : 350;
+            C_FLAME = isMobile ? 50 : 120;
+            C_CONFETTI = isMobile ? 300 : 800;
+
+            // Función generadora de cilindros para los pisos del pastel
+            function buildCylinder(radius, height, count, arr, colorFunc) {
+                for(let i = 0; i < count; i++) {
+                    let isCap = random() < 0.25; // 25% forma la "cubierta" de arriba
+                    let u, r_val;
+                    if (isCap) {
+                        u = 1.0;
+                        r_val = radius * sqrt(random());
+                    } else {
+                        u = random();
+                        r_val = radius;
+                    }
+                    let theta = random() * TWO_PI;
+                    arr.push({
+                        x: r_val * cos(theta),
+                        y: -height * u,
+                        z: r_val * sin(theta),
+                        u: u,
+                        c: colorFunc(u, theta)
+                    });
+                }
+            }
+
+            // Piso 1: Sabor Fresa/Vainilla
+            buildCylinder(160, 100, C_T1, tier1, () => color(255, random(80,120), random(150,180)));
+            
+            // Piso 2: Sabor Limón/Vainilla
+            buildCylinder(115, 80, C_T2, tier2, () => color(255, random(210,230), random(50,100)));
+            
+            // Piso 3: Sabor Mora Azul
+            buildCylinder(75, 70, C_T3, tier3, () => color(random(80,120), random(180,220), 255));
+            
+            // Vela: Rayas rojas y blancas en espiral
+            buildCylinder(12, 60, C_CANDLE, candle, (u, theta) => {
+                let espiral = theta + u * TWO_PI * 3; 
+                return sin(espiral) > 0 ? color(255, 50, 50) : color(255, 255, 255);
+            });
+
+            // Llama de la vela (forma de gota)
+            for(let i=0; i<C_FLAME; i++) {
+                let u = random();
+                let theta = random() * TWO_PI;
+                let r_val = 14 * (1 - u) * sin(u * PI); // Ecuación de lágrima/gota
+                flame.push({
+                    x: r_val * cos(theta), y: -35 * u, z: r_val * sin(theta), u: u,
+                    c: color(255, random(150, 220), 0)
+                });
+            }
+
+            // Confeti festivo disperso en el aire
+            let coloresConfeti = [color(255,0,0), color(0,255,0), color(0,150,255), color(255,255,0), color(255,0,255)];
+            for(let i=0; i<C_CONFETTI; i++) {
+                confetti.push({
+                    x: random(-400, 400),
+                    orig_y: random(-400, 400),
+                    z: random(-400, 400),
+                    c: random(coloresConfeti),
+                    velocidad: random(50, 150)
+                });
+            }
+            
+            // Estrellas de fondo
+            let numStars = isMobile ? 50 : 120;
+            for(let i=0; i<numStars; i++) {
+                stars.push({ x: random(windowWidth), y: random(windowHeight), phase: random(1) });
+            }
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth, windowHeight);
+        }
+
+        function project3D(x, y, z, baseFov=900, viewerDist=900) {
+            let scaleFactor = min(width, height) / 800; 
+            let fov = baseFov * scaleFactor;
+            let factor = fov / (viewerDist + z);
+            let x2d = x * factor + width / 2;
+            let y2d = y * factor + height / 2 + (150 * scaleFactor); 
+            return {x: x2d, y: y2d, size: factor, z: z};
+        }
+
+        function draw() {
+            background(12, 10, 24);
+            let time_t = millis() / 1000.0;
+            
+            // Ciclo de animación (15 segundos)
+            let ciclo = (time_t % 15) / 15.0;
+            
+            let p_t1 = constrain(map(ciclo, 0.0, 0.15, 0, 1), 0, 1);
+            let p_t2 = constrain(map(ciclo, 0.15, 0.30, 0, 1), 0, 1);
+            let p_t3 = constrain(map(ciclo, 0.30, 0.45, 0, 1), 0, 1);
+            let p_vela = constrain(map(ciclo, 0.45, 0.55, 0, 1), 0, 1);
+            let p_llama = constrain(map(ciclo, 0.55, 0.60, 0, 1), 0, 1);
+            let opacidad_global = constrain(map(ciclo, 0.9, 1.0, 1, 0), 0, 1); // Desvanece al final para repetir
+
+            // Aros de fondo
+            let scaleFactor = min(width, height) / 800;
+            noFill();
+            strokeWeight(1);
+            stroke(30, 25, 45, 255 * opacidad_global);
+            circle(width/2, height/2 - 50 * scaleFactor, 600 * scaleFactor);
+            circle(width/2, height/2 + 50 * scaleFactor, 400 * scaleFactor);
+
+            strokeWeight(isMobile ? 3 : 2);
+            for(let s of stars) {
+                let b = int(127 + 128 * sin(time_t * 3 + s.phase * 10)) * opacidad_global;
+                stroke(b);
+                point(s.x % width, s.y % height);
+            }
+            
+            let angle = time_t * 0.5; // Velocidad de giro del pastel
+            let cos_a = cos(angle), sin_a = sin(angle);
+            
+            let pointsToDraw = [];
+            let baseY = 200; // Posición base del pastel
+
+            function addParticles(arr, progress, heightOffset, isFlame=false) {
+                for(let i=0; i<arr.length; i++) {
+                    let p = arr[i];
+                    if (p.u <= progress || isFlame) { // Solo dibuja hasta donde avance el progreso
+                        let py = p.y - heightOffset;
+                        let r_x = p.x * cos_a - p.z * sin_a;
+                        let r_z = p.x * sin_a + p.z * cos_a;
+                        
+                        let px = r_x, pz = r_z;
+                        
+                        // Si es la llama, parpadea
+                        if (isFlame) {
+                            let parpadeo = random(0.8, 1.2) * p_llama;
+                            px *= parpadeo; py = (p.y * parpadeo) - heightOffset; pz *= parpadeo;
+                        }
+
+                        let c = p.c;
+                        c.setAlpha(255 * opacidad_global);
+                        pointsToDraw.push({x: px, y: py + baseY, z: pz, c: c, s: 3.5});
+                    }
+                }
+            }
+
+            // 1. Agregar Piso 1
+            addParticles(tier1, p_t1, 0);
+            // 2. Agregar Piso 2 (encima del Piso 1)
+            addParticles(tier2, p_t2, 100);
+            // 3. Agregar Piso 3 (encima del Piso 2)
+            addParticles(tier3, p_t3, 180);
+            // 4. Agregar Vela (encima del Piso 3)
+            addParticles(candle, p_vela, 250);
+            // 5. Agregar Llama (encima de la vela, solo cuando la llama existe)
+            if (p_llama > 0.1) {
+                addParticles(flame, 1.0, 310, true);
+            }
+
+            // 6. Confeti cayendo y girando
+            if (p_llama > 0.5) { // Empieza a llover confeti al prender la vela
+                for(let p of confetti) {
+                    let cy = p.orig_y + (time_t * p.velocidad);
+                    let wrap_y = ((cy + 400) % 800) - 400; // Hace que caiga infinitamente en bucle
+                    
+                    let r_x = p.x * cos_a - p.z * sin_a;
+                    let r_z = p.x * sin_a + p.z * cos_a;
+                    
+                    let c = p.c;
+                    c.setAlpha(255 * opacidad_global);
+                    pointsToDraw.push({x: r_x, y: wrap_y, z: r_z, c: c, s: 4});
+                }
+            }
+
+            // Ordenamiento por profundidad 3D (Z-Sorting)
+            pointsToDraw.sort((a, b) => b.z - a.z);
+            
+            // Renderizar partículas
+            noStroke();
+            for(let p of pointsToDraw) {
+                let proj = project3D(p.x, p.y, p.z);
+                fill(p.c);
+                let final_size = max(0.5, p.s * proj.size);
+                if (isMobile) final_size *= 1.5; 
+                circle(proj.x, proj.y, final_size);
+            }
+        }
+    </script>
+</body>
+</html>
